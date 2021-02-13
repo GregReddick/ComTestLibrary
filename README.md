@@ -20,13 +20,13 @@ The description that needs to go into the .idl file has to describe the
 interface that you define in C# in the terms that they will translate to 
 under the covers and be consumed by COM. This translation is beyond the scope 
 of what I can cover here. The definitive work on the subject is Adam Nathan's 
-[.NET and COM: The Complete Interoperability Guide] 
-(https://www.amazon.com/gp/product/B003AYZB7U), which although old (2002) and 
-only still in print in a Kindle edition, covers all of these details in 
-excruciating detail (1579 pages). If you ever need to do communication 
-between COM and .NET, it is worth having a copy of this book. Very little of 
-the topics covered in the book have changed in almost 20 years, including the 
-transition from .NET Framework to .NET Core.
+[.NET and COM: The Complete Interoperability 
+Guide](https://www.amazon.com/gp/product/B003AYZB7U), which although old 
+(2002) and only still in print in a Kindle edition, covers all of these 
+details in excruciating detail (1579 pages). If you ever need to do 
+communication between COM and .NET, it is worth having a copy of this book. 
+Very little of the topics covered in the book have changed in almost 20 
+years, including the transition from .NET Framework to .NET Core.
 
 # The Issue
 There has been a change in what .NET Core does compared to what the .NET 
@@ -126,11 +126,32 @@ The AssemblyInfo file defines two important attributes.
 [assembly: Guid("1B31B683-F0AA-4E71-8F50-F2D2E5E9E210")]
 ```
 
-The first attribute tell the compiler not to make anything visible to COM
-unless they are specifically marked with ComVisible(true). This keeps anything
-in the library that we don't explicity mark from poluting the registry.
-The second assigns the GUID for the
-library.
+The first attribute tell the compiler not to make anything visible to COM 
+unless they are specifically marked with ComVisible(true). This keeps 
+anything in the library that we don't explicity mark from poluting the 
+registry. The second assigns the GUID for the library. I also include a 
+little helper class in the AssemblyInfo.cs file. This class allows retrieving 
+project attributes. This will be used when registering the type library. This 
+class was first published in my book, [The Reddick C# Style 
+Guide](https://www.amazon.com/Reddick-Style-Guide-practices-writing/dp/06925317
+42).
+```
+namespace ComTestLibrary
+{
+	/// <summary>Gives information about the assembly.</summary>
+	internal static class AssemblyInfo
+	{
+		/// <summary>Gets an assembly attribute.</summary>
+		/// <typeparam name="T">Assembly attribute type.</typeparam>
+		/// <returns>The assembly attribute of type T.</returns>
+		internal static T Attribute<T>()
+			where T : Attribute
+		{
+			return typeof(AssemblyInfo).Assembly.GetCustomAttribute<T>();
+		}
+	}
+}
+```
 
 # The Interface File
 To start, you will need an interface file. It will describe the interface
@@ -187,8 +208,8 @@ don't work elsewhere.
 # The IDL File
 The next task is to generate a type library. Because .NET Core doesn't do 
 this task, we need to do it ourselves. This is done by creating an IDL file. 
-The structure of an IDL file can be found [here] 
-(https://docs.microsoft.com/en-us/windows/win32/midl/midl-start-page).
+The structure of an IDL file can be found 
+[here](https://docs.microsoft.com/en-us/windows/win32/midl/midl-start-page).
 
 ```
 import "unknwn.idl";
