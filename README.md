@@ -133,8 +133,7 @@ registry. The second assigns the GUID for the library. I also include a
 little helper class in the AssemblyInfo.cs file. This class allows retrieving 
 project attributes. This will be used when registering the type library. This 
 class was first published in my book, [The Reddick C# Style 
-Guide](https://www.amazon.com/Reddick-Style-Guide-practices-writing/dp/06925317
-42).
+Guide](https://www.amazon.com/Reddick-Style-Guide-practices-writing/dp/0692531742).
 ```
 namespace ComTestLibrary
 {
