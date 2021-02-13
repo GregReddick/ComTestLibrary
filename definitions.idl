@@ -1,0 +1,38 @@
+﻿import "unknwn.idl";
+
+[
+	object,
+	uuid(1B31B683-F0AA-4E71-8F50-F2D2E5E9E210),
+	dual,
+	nonextensible,
+	helpstring("ComTestLibrary"),
+	pointer_default(unique),
+	oleautomation
+]
+
+interface IComTest : IDispatch
+{
+	[id(1), helpstring("ComTestMetho")]
+	HRESULT ComTestMethod(
+		[in] double radius,
+		[in] BSTR comment,
+		[out, retval] double* ReturnVal);
+};
+
+[
+	uuid(49d618d5-a2d1-4fb6-ad3a-f8dc5ca25e02),
+	helpstring("ComTestLibrary")
+]
+library ComTestLibrary
+{
+	importlib("STDOLE2.TLB");
+
+	[
+		uuid(71AD0B2F-E5D0-4272-A4FD-18F707D5E0D6),
+		helpstring("ComTest")
+	]
+	coclass ComTest
+	{
+		[default] interface IComTest;
+	};
+}
