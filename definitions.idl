@@ -9,10 +9,9 @@
 	pointer_default(unique),
 	oleautomation
 ]
-
 interface IComTest : IDispatch
 {
-	[id(1), helpstring("ComTestMetho")]
+	[id(1), helpstring("ComTestMethod")]
 	HRESULT ComTestMethod(
 		[in] double radius,
 		[in] BSTR comment,

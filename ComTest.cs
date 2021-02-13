@@ -27,14 +27,19 @@ namespace ComTestLibrary
 		{
 			using (RegistryKey key = Registry.ClassesRoot.CreateSubKey(@"TypeLib\{71AD0B2F-E5D0-4272-A4FD-18F707D5E0D6}"))
 			{
-				using (RegistryKey keyWin32 = key.CreateSubKey(@"1.0\0\win32"))
+				Version version = typeof(AssemblyInfo).Assembly.GetName().Version;
+				using (RegistryKey keyVersion = key.CreateSubKey(string.Format("{0}.{1}", version.Major, version.Minor)))
 				{
-					keyWin32.SetValue(string.Empty, Path.ChangeExtension(Assembly.GetExecutingAssembly().Location, ".comhost.tlb"), RegistryValueKind.String);
-				}
+					keyVersion.SetValue(string.Empty, AssemblyInfo.Attribute<AssemblyDescriptionAttribute>().Description, RegistryValueKind.String);
+					using (RegistryKey keyWin32 = keyVersion.CreateSubKey(@"0\win32"))
+					{
+						keyWin32.SetValue(string.Empty, Path.ChangeExtension(Assembly.GetExecutingAssembly().Location, ".comhost.tlb"), RegistryValueKind.String);
+					}
 
-				using (RegistryKey keyFlags = key.CreateSubKey(@"1.0\FLAGS"))
-				{
-					keyFlags.SetValue(string.Empty, "0", RegistryValueKind.String);
+					using (RegistryKey keyFlags = keyVersion.CreateSubKey(@"FLAGS"))
+					{
+						keyFlags.SetValue(string.Empty, "0", RegistryValueKind.String);
+					}
 				}
 			}
 		}

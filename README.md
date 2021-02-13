@@ -204,7 +204,7 @@ import "unknwn.idl";
 ]
 interface IComTest : IDispatch
 {
-	[id(1), helpstring("ComTestMetho")]
+	[id(1), helpstring("ComTestMethod")]
 	HRESULT ComTestMethod(
 		[in] double radius,
 		[in] BSTR comment,
@@ -233,6 +233,12 @@ library ComTestLibrary
 The first uuid must match the GUID provided for library in the AssemblyInfo 
 file. The second uuid must match the one in the interface file. The third 
 must match the one in the class file.
+
+The critical part of the file is the description of the method. This must be
+the COM equivalent description of the method. For example, strings in C#
+must be listed as the BSTR data type for COM. The method must return a
+HRESULT. A parameter is the actual return value. Each method must have a
+unique id number.
 
 This file is compiled by the MIDL compiler. The MIDL compiler calls the CL 
 compiler to preprocess the file. There are a number of libraries and header 
@@ -269,38 +275,57 @@ Going back to the project file, here is another section of the file:
 	<Exec IgnoreExitCode="true" Command="regsvr32 /s /u &quot;$(TargetDir)$(TargetName).comhost.dll&quot;" />
 </Target>
 ```
-After a successful build of the project, this executes the MIDL compiler and compiles the type library.
-Then it registers the comhost file. The clean part unregisters the comhost file before cleaning.
-For the registration to work, Visual Studio must be executed as an administrator, otherwise it will
-not have the privilege necessary to create the registry entries.
+After a successful build of the project, this executes the MIDL compiler and 
+compiles the type library. Then it registers the comhost file. The clean part 
+unregisters the comhost file before cleaning. For the registration to work, 
+Visual Studio must be executed as an administrator, otherwise it will not 
+have the privilege necessary to create the registry entries.
 
 # DLLRegisterServer and DLLUnregisterServer
-The comhost file has a minimal amount of stuff to register the file. However it does not create
-all of the registry entries needed to use the library from a COM host. There needs to be a number
-of other entries. To create those entries, create two additional methods in the class file. When
-the comhost file is registered, if the DLLRegisterServer method exists, it will get called.
-When it is unregistered, it will call the DLLUnregisterServer method. These methods need
-to be decorated with attributes to identify them. The methods look like this:
+The comhost file has a minimal amount of stuff to register the file. However 
+it does not create all of the registry entries needed to use the library from 
+a COM host. There needs to be a number of other entries. To create those 
+entries, create two additional methods in the class file. When the comhost 
+file is registered, if the DLLRegisterServer method exists, it will get 
+called. When it is unregistered, it will call the DLLUnregisterServer method. 
+These methods need to be decorated with attributes to identify them. Change 
+the GUID in both procedures. The methods look like this:
 ```
-	[ComRegisterFunction]
-	public static void DllRegisterServer(Type t)
+[ComRegisterFunction]
+public static void DllRegisterServer(Type t)
+{
+	using (RegistryKey key = Registry.ClassesRoot.CreateSubKey(@"TypeLib\{71AD0B2F-E5D0-4272-A4FD-18F707D5E0D6}"))
 	{
-		Registry.CurrentUser.CreateSubKey(@"SOFTWARE\ComTestLibrary");
-	}
+		Version version = typeof(AssemblyInfo).Assembly.GetName().Version;
+		using (RegistryKey keyVersion = key.CreateSubKey(string.Format("{0}.{1}", version.Major, version.Minor)))
+		{
+			keyVersion.SetValue(string.Empty, AssemblyInfo.Attribute<AssemblyDescriptionAttribute>().Description, RegistryValueKind.String);
+			using (RegistryKey keyWin32 = keyVersion.CreateSubKey(@"0\win32"))
+			{
+				keyWin32.SetValue(string.Empty, Path.ChangeExtension(Assembly.GetExecutingAssembly().Location, ".comhost.tlb"), RegistryValueKind.String);
+			}
 
-	[ComUnregisterFunction]
-	public static void DllUnregisterServer(Type t)
-	{
-		Registry.CurrentUser.DeleteSubKeyTree(@"SOFTWARE\ComTestLibrary");
+			using (RegistryKey keyFlags = keyVersion.CreateSubKey(@"FLAGS"))
+			{
+				keyFlags.SetValue(string.Empty, "0", RegistryValueKind.String);
+			}
+		}
 	}
+}
+
+[ComUnregisterFunction]
+public static void DllUnregisterServer(Type t)
+{
+	Registry.ClassesRoot.DeleteSubKeyTree(@"TypeLib\{71AD0B2F-E5D0-4272-A4FD-18F707D5E0D6}", false);
+}
 ```
-
+The AssemblyInfo class is found in the AssemblyInfo.cs file.
 # Calling the DLL From Excel
-To try calling the DLL from Excel VBA, start Excel and press Alt+F11 to enter
-the Visual Basic Editor. Create a reference by selecting Tools > References from the
-menu. Check the checkbox next to ComTestLibrary and press OK. This creates an early
-binding reference to the library. Select Insert > Module from the menu. Insert the following
-VBA code:
+To try calling the DLL from Excel VBA, start Excel and press Alt+F11 to enter 
+the Visual Basic Editor. Create a reference by selecting Tools > References 
+from the menu. Check the checkbox next to ComTestLibrary and press OK. This 
+creates an early binding reference to the library. Select Insert > Module 
+from the menu. Insert the following VBA code:
 ```
 Public Sub TryIt
 	Dim comtest As ComTestLibrary.ComTest
@@ -310,5 +335,5 @@ Public Sub TryIt
 	MsgBox area
 End Sub
 ```
-Click in the middle of the sub and press the F5 key to execute it. If all went well, it will show you the area
-of a circle with the radius of 3.
+Click in the middle of the sub and press the F5 key to execute it. If all 
+went well, it will show you the area of a circle with the radius of 3.
