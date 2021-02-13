@@ -303,10 +303,10 @@ binding reference to the library. Select Insert > Module from the menu. Insert t
 VBA code:
 ```
 Public Sub TryIt
-	Dim obj As ComTestLibrary.ComTest
+	Dim comtest As ComTestLibrary.ComTest
 	Dim area As Double
-	Set obj = New ComTestLibrary.ComTest
-	area = obj.ComTestMethod(3, "abcdefghi");
+	Set comtest = New ComTestLibrary.ComTest
+	area = comtest.ComTestMethod(3, "abcdefghi")
 	MsgBox area
 End Sub
 ```

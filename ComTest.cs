@@ -7,6 +7,9 @@
 namespace ComTestLibrary
 {
 	using System;
+	using System.Diagnostics;
+	using System.IO;
+	using System.Reflection;
 	using System.Runtime.InteropServices;
 
 	using Microsoft.Win32;
@@ -22,7 +25,18 @@ namespace ComTestLibrary
 		[ComRegisterFunction]
 		public static void DllRegisterServer(Type t)
 		{
-			Registry.CurrentUser.CreateSubKey(@"SOFTWARE\ComTestLibrary");
+			using (RegistryKey key = Registry.ClassesRoot.CreateSubKey(@"TypeLib\{71AD0B2F-E5D0-4272-A4FD-18F707D5E0D6}"))
+			{
+				using (RegistryKey keyWin32 = key.CreateSubKey(@"1.0\0\win32"))
+				{
+					keyWin32.SetValue(string.Empty, Path.ChangeExtension(Assembly.GetExecutingAssembly().Location, ".comhost.tlb"), RegistryValueKind.String);
+				}
+
+				using (RegistryKey keyFlags = key.CreateSubKey(@"1.0\FLAGS"))
+				{
+					keyFlags.SetValue(string.Empty, "0", RegistryValueKind.String);
+				}
+			}
 		}
 
 		/// <summary>DLL unregister server.</summary>
@@ -30,7 +44,7 @@ namespace ComTestLibrary
 		[ComUnregisterFunction]
 		public static void DllUnregisterServer(Type t)
 		{
-			Registry.CurrentUser.DeleteSubKeyTree(@"SOFTWARE\ComTestLibrary");
+			Registry.ClassesRoot.DeleteSubKeyTree(@"TypeLib\{71AD0B2F-E5D0-4272-A4FD-18F707D5E0D6}", false);
 		}
 
 		/// <summary>Com test method.</summary>
