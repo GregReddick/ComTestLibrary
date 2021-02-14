@@ -22,7 +22,6 @@
 		<GenerateDocumentationFile>True</GenerateDocumentationFile>
 		<NETCoreSdkRuntimeIdentifier>win-$(Platform)</NETCoreSdkRuntimeIdentifier>
 		<Platforms>x64;x86</Platforms>
-		<PlatformTarget>x86</PlatformTarget>
 		<TargetFramework>net5.0-windows</TargetFramework>
 	</PropertyGroup>
 	<Target AfterTargets="PostBuildEvent" Name="PostBuild">

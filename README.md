@@ -56,10 +56,10 @@ need to update to match your environment. I had this sample project break
 just by updating to the latest version of Visual Studio, which changed the 
 path to one of the tools. Inside the response.txt file that is fed to the 
 MIDL compiler, there is a hack to get around the fact that the MIDL compiler 
-doesn't like spaces in some file or directory names. This hack is to use the 
-short names (8.3 FAT names) to access the files. This is also particularly 
-fragile as short names are assigned by the operating system and can be 
-different on different computers.
+(actually the preprocessor) doesn't like spaces in some file or directory 
+names. This hack is to use the short names (8.3 FAT names) to access the 
+files. This is also particularly fragile as short names are assigned by the 
+operating system and can be different on different computers.
 
 Making this work in a team environment will be difficult as a build that 
 works on one computer may not work on the next one. I will leave this as a 
@@ -67,7 +67,8 @@ task for the reader to get this working where it can just be downloaded to an
 arbitrary computer and have it build correctly and also not break when there 
 are updated tools. Adding things to the computer's path or creating 
 enivornment variables may be a solution. Another technique that may work is 
-copying tools to a shared directory that has no spaces in the name.
+copying tools and include files to a shared directory that has no spaces in 
+the name.
 
 # Bitness (32 bit versus 64 bit)
 Another issue that you will run into is a problem of bitness. A 32 bit COM 
@@ -88,13 +89,19 @@ some organizations. The .NET library that we build can be compiled as 32 bit
 can be just-in-time (JIT) compiled to 32 bit or 64 bit as needed. There is a 
 compiler flag that marks that if it can be compiled to either one, which one 
 should it compile to. If you don't pass in the flag, the JIT compiler will 
-default to 32 bit, but compile to 64 bit if that is the only version that 
-will run (which is true on some Windows servers). The flag can also be set to 
-default to 64 bit. However, the comhost wrapper file does not have that 
+default to 32 bit, but compile to 64 bit if needed. The flag can also be set 
+to default to 64 bit. However, the comhost wrapper file does not have that 
 flexibility. It is static compiled to either 32 bit or 64 bit. We need to get 
 this compiled to the same bitness as the COM host that will calling it. This 
 is also performed by a compiler flag. All of these compiler flags are set in 
 the Visual Studio project file.
+
+The current project has two different builds, x86 (32 bit) and x64 (64 bit). 
+These can be "Batch build" to build both of them at the same time. Some of 
+the complexity of handling both 32 and 64 bit will soon be fixed: 
+https://github.com/dotnet/runtime/issues/32493. This will allow a AnyCPU 
+build to have both a 32 bit and 64 bit comhost file. I will simplify the 
+build process once this enhancement is made and released.
 
 # GUIDs
 You will need to generate three GUIDs (Globally Unique Identifiers, also 
@@ -188,21 +195,27 @@ The project file needs these XML settings:
 
 ```
 <PropertyGroup>
+	<AssemblyName>$(MSBuildProjectName)$(Platform)</AssemblyName>
+	<Description>Com Test Library</Description>
 	<EnableComHosting>true</EnableComHosting>
-	<NETCoreSdkRuntimeIdentifier>win-x86</NETCoreSdkRuntimeIdentifier>
-	<PlatformTarget>AnyCPU</PlatformTarget>
-	<TargetFramework>net5.0-windows7.0</TargetFramework>
+	<EnableDefaultItems>false</EnableDefaultItems>
+	<GenerateDocumentationFile>True</GenerateDocumentationFile>
+	<NETCoreSdkRuntimeIdentifier>win-$(Platform)</NETCoreSdkRuntimeIdentifier>
+	<Platforms>x64;x86</Platforms>
+	<TargetFramework>net5.0-windows</TargetFramework>
 </PropertyGroup>
 ```
-The EnableComHosting setting tells the compiler that it needs to build the 
-ComTestLibrary.comhost.dll. The NETCoreSdkRuntimeIdentifier win-x86 setting 
-informs the compiler that when it builds the comhost.dll, it should be a 32 
-bit file (use win-x64 if you wanted to build 64 bit). The PlatformTarget 
-setting tells the compiler that it should make the actual DLL AnyCPU (use x64 
-for 64 bit). The TargetFramework setting tells the compiler that it should 
-use .NET 5 built for windows 7.0 or later. Since none of this runs on any 
-operating system other than Windows, it won't complain about features that 
-don't work elsewhere.
+The AssemblyName setting will change the name of the final assembly to have 
+the bitness appended to the name. The Description setting is used as the 
+description of the type library inside the registry. The EnableComHosting 
+setting tells the compiler that it needs to build the 
+ComTestLibraryx86.comhost.dll (or ComTestLibraryx64). The 
+NETCoreSdkRuntimeIdentifier win-$(Platform) setting informs the compiler that 
+when it builds the comhost.dll, it should match the bitness of the library. 
+The Platforms setting tells Visual Studio it should support building both 
+bitness values. The TargetFramework setting tells the compiler that it should 
+use .NET 5 built for windows. Since none of this runs on any operating system 
+other than Windows, it won't complain about features that don't work elsewhere.
 
 # The IDL File
 The next task is to generate a type library. Because .NET Core doesn't do 
@@ -276,30 +289,33 @@ command line, we pass in a response file. The response file looks like this:
 /tlb "D:\src.cs\ComTestLibrary\bin\Debug\net5.0-windows7.0\ComTestLibrary.comhost.tlb"
 ```
 
-This file will need to be tweaked to match your file system. As mentioned 
-above the MIDL compiler gets picky about having spaces in file names, so the 
+This file will need to be tweaked to match your file system. In particular, 
+you will need to change the 10.0.19041 and 14.28.29828 version numbers to 
+match what is the current version on your machine. You will also need to 
+change the drive and path of the ComTestLibrary. As mentioned above the MIDL 
+compiler gets picky about having spaces in file names, so the 
 Progra~2\Micros~2 needs to match the short names for your C:\Program Files 
 (x86)\Microsoft Visual Studio directory. the C:\Progra~2\wi3cf2~1 needs to 
-match the short names of the C:\Program Files (x86)\Windows Kits directory.
-The D:\src.cs will need to match where the sources for the project are
-located.
+match the short names of the C:\Program Files (x86)\Windows Kits directory. 
 
 # More Project File
 Going back to the project file, here is another section of the file:
 ```
 <Target AfterTargets="PostBuildEvent" Name="PostBuild">
-	<Exec command="cmd /S /c &quot;&quot;C:\Program Files (x86)\Windows Kits\10\bin\10.0.19041.0\x64\midl.exe&quot; @$(ProjectDir)response.txt&quot;" />
+	<Exec command="cmd /S /c &quot;&quot;C:\Program Files (x86)\Windows Kits\10\bin\10.0.19041.0\x64\midl.exe&quot; @$(ProjectDir)response$(Platform).txt&quot;" />
 	<Exec command="regsvr32 /s &quot;$(TargetDir)$(TargetName).comhost.dll&quot;" />
 </Target>
-<Target BeforeTargets="Clean" Name="RegClean">
+<Target AfterTargets="BeforeClean" BeforeTargets="CoreClean" Name="RegClean">
 	<Exec IgnoreExitCode="true" Command="regsvr32 /s /u &quot;$(TargetDir)$(TargetName).comhost.dll&quot;" />
 </Target>
 ```
-After a successful build of the project, this executes the MIDL compiler and 
-compiles the type library. Then it registers the comhost file. The clean part 
-unregisters the comhost file before cleaning. For the registration to work, 
-Visual Studio must be executed as an administrator, otherwise it will not 
-have the privilege necessary to create the registry entries.
+You will need to change the 19041 in the path to match the version number on 
+your machine. After a successful build of the project, this executes the MIDL 
+compiler and compiles the type library. Then it registers the comhost file. 
+The clean part unregisters the comhost file before cleaning. For the 
+registration to work, Visual Studio must be executed as an administrator, 
+otherwise it will not have the privilege necessary to create the registry 
+entries.
 
 # DLLRegisterServer and DLLUnregisterServer
 The comhost file has a minimal amount of stuff to register the file. However 
@@ -357,3 +373,9 @@ End Sub
 ```
 Click in the middle of the sub and press the F5 key to execute it. If all 
 went well, it will show you the area of a circle with the radius of 3.
+
+To use this in production, six files should be copied to the install 
+directory: ComTestLibraryx32.comhost.dll, ComTestLibraryx32.comhost.tlb, 
+ComTestLibraryx32.dll, ComTestLibraryx64.comhost.dll, 
+ComTestLibraryx64.comhost.tlb, ComTestLibraryx64.dll After they are copied, 
+then regsvr32 needs to be run on the two comhost files.
