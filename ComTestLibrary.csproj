@@ -5,7 +5,8 @@
 		<Compile Include="ComTest.cs" />
 		<Compile Include="IComTest.cs" />
 		<None Include="README.md" />
-		<None Include="response.txt" />
+		<None Include="responsex64.txt" />
+		<None Include="responsex86.txt" />
 		<None Include="definitions.idl" />
 		<PackageReference Include="Microsoft.Win32.Registry" Version="5.0.0" />
 		<PackageReference Include="StyleCop.Analyzers.Unstable" Version="1.2.0.321">
@@ -14,19 +15,21 @@
 		</PackageReference>
 	</ItemGroup>
 	<PropertyGroup>
+		<AssemblyName>$(MSBuildProjectName)$(Platform)</AssemblyName>
+		<Description>Com Test Library</Description>
 		<EnableComHosting>true</EnableComHosting>
 		<EnableDefaultItems>false</EnableDefaultItems>
 		<GenerateDocumentationFile>True</GenerateDocumentationFile>
-		<NETCoreSdkRuntimeIdentifier>win-x86</NETCoreSdkRuntimeIdentifier>
-		<PlatformTarget>AnyCPU</PlatformTarget>
-		<TargetFramework>net5.0-windows7.0</TargetFramework>
-		<Description>Com Test Library</Description>
+		<NETCoreSdkRuntimeIdentifier>win-$(Platform)</NETCoreSdkRuntimeIdentifier>
+		<Platforms>x64;x86</Platforms>
+		<PlatformTarget>x86</PlatformTarget>
+		<TargetFramework>net5.0-windows</TargetFramework>
 	</PropertyGroup>
 	<Target AfterTargets="PostBuildEvent" Name="PostBuild">
-		<Exec command="cmd /S /c &quot;&quot;C:\Program Files (x86)\Windows Kits\10\bin\10.0.19041.0\x64\midl.exe&quot; @$(ProjectDir)response.txt&quot;" />
+		<Exec command="cmd /S /c &quot;&quot;C:\Program Files (x86)\Windows Kits\10\bin\10.0.19041.0\x64\midl.exe&quot; @$(ProjectDir)response$(Platform).txt&quot;" />
 		<Exec command="regsvr32 /s &quot;$(TargetDir)$(TargetName).comhost.dll&quot;" />
 	</Target>
-	<Target BeforeTargets="Clean" Name="RegClean">
+	<Target AfterTargets="BeforeClean" BeforeTargets="CoreClean" Name="RegClean">
 		<Exec IgnoreExitCode="true" Command="regsvr32 /s /u &quot;$(TargetDir)$(TargetName).comhost.dll&quot;" />
 	</Target>
 </Project>
