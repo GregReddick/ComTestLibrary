@@ -1,20 +1,20 @@
-# Calling .NET 5 (.NET Core) from COM Host Like Excel
-This project is a minimal example of using .NET 5 (or really any recent 
-version of .NET Core, .NET 5 is just .NET Core version 5) to create a library 
-that is able to be early bound and called by any Windows COM host, 
-particularly from Microsoft Office (Access, Excel, Outlook, PowerPoint, 
-Visio, Word). While this was relatively easy in the earlier .NET Framework 
-projects there is missing functionality in .NET Core that makes this difficult.
+# Calling .NET 5 (.NET Core) from a COM Host Like Excel
+This project is a minimal example of using .NET 5 to create a library that is 
+able to be early bound and called by any Windows COM (Component Object Model) 
+host, particularly from Microsoft Office (Access, Excel, Outlook, PowerPoint, 
+Visio, Word). Note that .NET 5 is a shorted name for .NET Core Version 5. 
+While this was relatively easy in the earlier .NET Framework projects there 
+is missing functionality in .NET Core that makes this difficult.
 
-Recommendation: Unless you have a good reason for building the library in 
+*Recommendation: Unless you have a good reason for building the library in 
 .NET 5 (or any version of .NET Core), I recommend using .NET Framework 4.8 as 
 your target environment. An example of a good reason is a library that will 
-*also* be called by a .NET core application. There are complexities, 
-particularly the .idl file and registration, that you have to do by hand in 
+**also** be called by a .NET Core application. There are complexities, 
+particularly in the .idl file and registration, that you have to do by hand in 
 this technique that are solved automatically by the .NET Framework. I expect 
-in future versions of .NET Core (.NET 5+, .NET 6?), that they will do 
+in future versions of .NET Core (.NET 5.1?, .NET 6?), that they will do 
 automatically some of the things I am doing by hand here. When that happens, 
-you can make the transition.
+you can make the transition.*
 
 The description that needs to go into the .idl file has to describe the 
 interface that you define in C# in the terms that they will translate to 
@@ -42,6 +42,13 @@ to the library. So we need to create that type library ourselves, and create
 the correct registry entries so that COM can connect to the library and make 
 the proper calls.
 
+# Limitation
+One COM host cannot start two different versions of .NET Core in the same 
+process. Because the COM library runs in-process with the COM host, this 
+means that if you use this technique on two libraries that use different 
+versions of the .NET Core, the second library called may not work. There
+currently is no way to start .NET Core COM libraries out-of-process.
+
 # Getting Started
 You will need the MIDL compiler. This is installed in the C++ packages, not 
 the C# packages in the Visual Studio installer. You will also need the CL 
@@ -54,19 +61,19 @@ References to tools and projects in this example are fragile. I have
 hard-coded strings that reference the tools and project files that you will 
 need to update to match your environment. I had this sample project break 
 just by updating to the latest version of Visual Studio, which changed the 
-path to one of the tools. Inside the response.txt file that is fed to the 
-MIDL compiler, there is a hack to get around the fact that the MIDL compiler 
-(actually the preprocessor) doesn't like spaces in some file or directory 
-names. This hack is to use the short names (8.3 FAT names) to access the 
-files. This is also particularly fragile as short names are assigned by the 
-operating system and can be different on different computers.
+path to one of the tools. Inside the response32.txt and response64 files that 
+is fed to the MIDL compiler, there is a hack to get around the fact that the 
+MIDL compiler (actually the preprocessor) doesn't like spaces in some file or 
+directory names. This hack is to use the short names (8.3 FAT names) to 
+access the files. This is also particularly fragile as short names are 
+assigned by the operating system and can be different on different computers.
 
 Making this work in a team environment will be difficult as a build that 
 works on one computer may not work on the next one. I will leave this as a 
 task for the reader to get this working where it can just be downloaded to an 
 arbitrary computer and have it build correctly and also not break when there 
 are updated tools. Adding things to the computer's path or creating 
-enivornment variables may be a solution. Another technique that may work is 
+environment variables may be a solution. Another technique that may work is 
 copying tools and include files to a shared directory that has no spaces in 
 the name.
 
@@ -83,18 +90,17 @@ cannot run on 32 bit Windows, but 32 bit programs and libraries will run on
 
 The COM host will be something like Excel. By default, the Office installer 
 installs 32 bit editions of Microsoft Office. However, you can also install 
-64 bit editions of Office by running the 64 bit installer, which happens in 
-some organizations. The .NET library that we build can be compiled as 32 bit 
-(x86), 64 bit (x64) or have it marked as AnyCPU. What AnyCPU means is that it 
-can be just-in-time (JIT) compiled to 32 bit or 64 bit as needed. There is a 
-compiler flag that marks that if it can be compiled to either one, which one 
-should it compile to. If you don't pass in the flag, the JIT compiler will 
-default to 32 bit, but compile to 64 bit if needed. The flag can also be set 
-to default to 64 bit. However, the comhost wrapper file does not have that 
-flexibility. It is static compiled to either 32 bit or 64 bit. We need to get 
-this compiled to the same bitness as the COM host that will calling it. This 
-is also performed by a compiler flag. All of these compiler flags are set in 
-the Visual Studio project file.
+64 bit editions of Office by running the 64 bit installer. The .NET library 
+that we build can be compiled as 32 bit (x86), 64 bit (x64) or have it marked 
+as AnyCPU. What AnyCPU means is that it can be just-in-time (JIT) compiled to 
+32 bit or 64 bit as needed. There is a compiler flag that marks that if it 
+can be compiled to either one, which one should it compile to. If you don't 
+pass in the flag, the JIT compiler will default to 32 bit, but compile to 64 
+bit if needed. The flag can also be set to default to 64 bit. However, the 
+comhost wrapper file does not have that flexibility. It is static compiled to 
+either 32 bit or 64 bit. We need to get this compiled to the same bitness as 
+the COM host that will calling it. This is also performed by a compiler flag. 
+All of these compiler flags are set in the Visual Studio project file.
 
 The current project has two different builds, x86 (32 bit) and x64 (64 bit). 
 These can be "Batch build" to build both of them at the same time. Some of 
@@ -267,8 +273,8 @@ The first uuid must match the GUID provided for library in the AssemblyInfo
 file. The second uuid must match the one in the interface file. The third 
 must match the one in the class file.
 
-The critical part of the file is the description of the method. This must be
-the COM equivalent description of the method. For example, strings in C#
+The critical part of the file is the description of the methods. This must be
+the COM equivalent description of the methods. For example, strings in C#
 must be listed as the BSTR data type for COM. The method must return a
 HRESULT. A parameter is the actual return value. Each method must have a
 unique id number.
@@ -286,14 +292,14 @@ command line, we pass in a response file. The response file looks like this:
 /cpp_opt "/E /I C:\Progra~2\wi3cf2~1\10\include\10.0.19041.0\um"
 /win32
 "D:\src.cs\ComTestLibrary\definitions.idl"
-/tlb "D:\src.cs\ComTestLibrary\bin\Debug\net5.0-windows7.0\ComTestLibrary.comhost.tlb"
+/tlb "D:\src.cs\ComTestLibrary\bin\x86\Debug\net5.0-windows\ComTestLibraryx86.comhost.tlb"
 ```
-
-This file will need to be tweaked to match your file system. In particular, 
-you will need to change the 10.0.19041 and 14.28.29828 version numbers to 
-match what is the current version on your machine. You will also need to 
-change the drive and path of the ComTestLibrary. As mentioned above the MIDL 
-compiler gets picky about having spaces in file names, so the 
+There are actually two different response files: responsex86.txt and 
+responsex64.txt. These files will need to be tweaked to match your file system. 
+In particular, you will need to change the 10.0.19041 and 14.28.29828 version 
+numbers to match what is the current version on your machine. You will also 
+need to change the drive and path of the ComTestLibrary. As mentioned above 
+the MIDL compiler gets picky about having spaces in file names, so the 
 Progra~2\Micros~2 needs to match the short names for your C:\Program Files 
 (x86)\Microsoft Visual Studio directory. the C:\Progra~2\wi3cf2~1 needs to 
 match the short names of the C:\Program Files (x86)\Windows Kits directory. 
@@ -356,6 +362,7 @@ public static void DllUnregisterServer(Type t)
 }
 ```
 The AssemblyInfo class is found in the AssemblyInfo.cs file.
+
 # Calling the DLL From Excel
 To try calling the DLL from Excel VBA, start Excel and press Alt+F11 to enter 
 the Visual Basic Editor. Create a reference by selecting Tools > References 
