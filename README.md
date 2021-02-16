@@ -2,7 +2,7 @@
 This project is a minimal example of using .NET 5 to create a library that is 
 able to be early bound and called by any Windows COM (Component Object Model) 
 host, particularly from Microsoft Office (Access, Excel, Outlook, PowerPoint, 
-Visio, Word). Note that .NET 5 is a shorted name for .NET Core Version 5. 
+Visio, Word). Note that .NET 5 is a shortened name for .NET Core Version 5. 
 While this was relatively easy in the earlier .NET Framework projects there 
 is missing functionality in .NET Core that makes this difficult.
 
@@ -56,27 +56,6 @@ compiler to perform C++ preprocessing on the .IDL file. I have not determined
 exactly what is the minimal install, but installing all the stuff needed to 
 build C++ programs will give you what you need.
 
-# Build and Test
-References to tools and projects in this example are fragile. I have 
-hard-coded strings that reference the tools and project files that you will 
-need to update to match your environment. I had this sample project break 
-just by updating to the latest version of Visual Studio, which changed the 
-path to one of the tools. Inside the response32.txt and response64 files that 
-is fed to the MIDL compiler, there is a hack to get around the fact that the 
-MIDL compiler (actually the preprocessor) doesn't like spaces in some file or 
-directory names. This hack is to use the short names (8.3 FAT names) to 
-access the files. This is also particularly fragile as short names are 
-assigned by the operating system and can be different on different computers.
-
-Making this work in a team environment will be difficult as a build that 
-works on one computer may not work on the next one. I will leave this as a 
-task for the reader to get this working where it can just be downloaded to an 
-arbitrary computer and have it build correctly and also not break when there 
-are updated tools. Adding things to the computer's path or creating 
-environment variables may be a solution. Another technique that may work is 
-copying tools and include files to a shared directory that has no spaces in 
-the name.
-
 # Bitness (32 bit versus 64 bit)
 Another issue that you will run into is a problem of bitness. A 32 bit COM 
 host cannot call a 64 bit .NET library. And the same is true the other way 
@@ -112,8 +91,8 @@ build process once this enhancement is made and released.
 # GUIDs
 You will need to generate three GUIDs (Globally Unique Identifiers, also 
 called UUID, Universally Unique Identifiers) to get your own projects to 
-work. These are essentially very large random numbers. **DO NOT USE** the 
-GUIDs I have in the sample project in your own projects. The purpose of a 
+work. These are essentially very large random numbers. **DO NOT USE the 
+GUIDs I have in the sample project in your own projects.** The purpose of a 
 GUID is to be unique across the entire universe, so that no two projects will 
 ever conflict. You will need one for library and one each for the class and 
 the interface. You can generate GUIDs in Visual Studio by selecting "Tools > 
@@ -200,28 +179,58 @@ discussed later.
 The project file needs these XML settings:
 
 ```
-<PropertyGroup>
-	<AssemblyName>$(MSBuildProjectName)$(Platform)</AssemblyName>
-	<Description>Com Test Library</Description>
-	<EnableComHosting>true</EnableComHosting>
-	<EnableDefaultItems>false</EnableDefaultItems>
-	<GenerateDocumentationFile>True</GenerateDocumentationFile>
-	<NETCoreSdkRuntimeIdentifier>win-$(Platform)</NETCoreSdkRuntimeIdentifier>
-	<Platforms>x64;x86</Platforms>
-	<TargetFramework>net5.0-windows</TargetFramework>
-</PropertyGroup>
+	<PropertyGroup>
+		<AssemblyName>$(MSBuildProjectName)$(Platform)</AssemblyName>
+		<Description>Com Test Library</Description>
+		<EnableComHosting>true</EnableComHosting>
+		<EnableDefaultItems>false</EnableDefaultItems>
+		<GenerateDocumentationFile>True</GenerateDocumentationFile>
+		<PathKitsBin>c:\Program Files (x86)\Windows Kits\10\bin\10.0.19041.0</PathKitsBin>
+		<PathKitsInclude>C:\Program Files (x86)\Windows Kits\10\include\10.0.19041.0</PathKitsInclude>
+		<MidlOptions>
+			/cpp_cmd "C:\Progra~2\Micros~2\2019\Preview\VC\Tools\MSVC\14.28.29828\bin\Hostx64\x64\cl.exe"
+			/dlldata nul /h nul /iid nul /proxy nul
+			/I "$(PathKitsInclude)\um\64"
+			/I "$(PathKitsInclude)\um"
+			/I "$(PathKitsInclude)\shared"
+			/out "bin\$(Platform)\$(Configuration)\net5.0-windows"
+			/savePP
+			/tlb "ComTestLibrary$(Platform).comhost.tlb"
+			definitions.idl
+		</MidlOptions>
+		<NETCoreSdkRuntimeIdentifier>win-$(Platform)</NETCoreSdkRuntimeIdentifier>
+		<Platforms>x64;x86</Platforms>
+		<TargetFramework>net5.0-windows</TargetFramework>
+	</PropertyGroup>
+
 ```
+# Build and Test
+References to tools are somewhat fragile. You will need to change 
+**PathKitsBin**, **PathKitsInclude**, and **/cpp_cmd** to reference the 
+versions of the SDK you have installed on your computer. A somewhat big gotcha 
+is that the **/cpp_cmd path** to the cl.exe file is installed in a directory 
+that has spaces in it, but the midl compiler cannot find it if it has 
+spaces--kind of a catch 22. The workaround (this problem has existed forever, 
+but Microsoft seems to refuse to fix it) is to use FAT 8.3 short names to 
+reference the file. You can find the shortname with the "dir /X" command from 
+a command prompt. This can break as the shortname is assigned by the 
+operating system based. It is also possible to turn off support for the short 
+names in the operating system. Several possible other ways of fixing this is 
+to privide a share to the directory of the cl.exe compiler, or add the 
+directory of the cl.exe compiler to the system-wide path.
+
 The AssemblyName setting will change the name of the final assembly to have 
 the bitness appended to the name. The Description setting is used as the 
 description of the type library inside the registry. The EnableComHosting 
 setting tells the compiler that it needs to build the 
-ComTestLibraryx86.comhost.dll (or ComTestLibraryx64). The 
-NETCoreSdkRuntimeIdentifier win-$(Platform) setting informs the compiler that 
-when it builds the comhost.dll, it should match the bitness of the library. 
-The Platforms setting tells Visual Studio it should support building both 
-bitness values. The TargetFramework setting tells the compiler that it should 
-use .NET 5 built for windows. Since none of this runs on any operating system 
-other than Windows, it won't complain about features that don't work elsewhere.
+ComTestLibraryx86.comhost.dll (or ComTestLibraryx64.comhost.dll). The 
+MidlOptionsThe are passed to the midl compiler. NETCoreSdkRuntimeIdentifier 
+win-$(Platform) setting informs the compiler that when it builds the 
+comhost.dll, it should match the bitness of the library. The Platforms 
+setting tells Visual Studio it should support building both bitness values. 
+The TargetFramework setting tells the compiler that it should use .NET 5 
+built for windows. Since none of this runs on any operating system other than 
+Windows, it won't complain about features that don't work elsewhere.
 
 # The IDL File
 The next task is to generate a type library. Because .NET Core doesn't do 
@@ -284,44 +293,26 @@ compiler to preprocess the file. There are a number of libraries and header
 files that it needs to access to get the compiling done.
 
 To process the file, rather than attempting to pass everything to the MIDL 
-command line, we pass in a response file. The response file looks like this:
-
-```
-/I "C:\Program Files (x86)\Windows Kits\10\include\10.0.19041.0\um\64;C:\Program Files (x86)\Windows Kits\10\include\10.0.19041.0\um;c:\Program Files (x86)\Windows Kits\10\Include\10.0.19041.0\shared"
-/cpp_cmd C:\Progra~2\Micros~2\2019\Preview\VC\Tools\MSVC\14.28.29828\bin\Hostx64\x64\cl.exe
-/cpp_opt "/E /I C:\Progra~2\wi3cf2~1\10\include\10.0.19041.0\um"
-/win32
-"D:\src.cs\ComTestLibrary\definitions.idl"
-/tlb "D:\src.cs\ComTestLibrary\bin\x86\Debug\net5.0-windows\ComTestLibraryx86.comhost.tlb"
-```
-There are actually two different response files: responsex86.txt and 
-responsex64.txt. These files will need to be tweaked to match your file system. 
-In particular, you will need to change the 10.0.19041 and 14.28.29828 version 
-numbers to match what is the current version on your machine. You will also 
-need to change the drive and path of the ComTestLibrary. As mentioned above 
-the MIDL compiler gets picky about having spaces in file names, so the 
-Progra~2\Micros~2 needs to match the short names for your C:\Program Files 
-(x86)\Microsoft Visual Studio directory. the C:\Progra~2\wi3cf2~1 needs to 
-match the short names of the C:\Program Files (x86)\Windows Kits directory. 
+command line, we pass in a response file midloptions.txt. The response file 
+is created by the project file and saved to the target directory.
 
 # More Project File
 Going back to the project file, here is another section of the file:
 ```
 <Target AfterTargets="PostBuildEvent" Name="PostBuild">
-	<Exec command="cmd /S /c &quot;&quot;C:\Program Files (x86)\Windows Kits\10\bin\10.0.19041.0\x64\midl.exe&quot; @$(ProjectDir)response$(Platform).txt&quot;" />
+	<WriteLinesToFile File="$(TargetDir)midloptions.txt" Overwrite="true" Lines="$(MidlOptions)" />
+	<Exec command="&quot;$(PathKitsBin)\x64\midl.exe&quot; @$(TargetDir)midloptions.txt&quot;" />
 	<Exec command="regsvr32 /s &quot;$(TargetDir)$(TargetName).comhost.dll&quot;" />
 </Target>
 <Target AfterTargets="BeforeClean" BeforeTargets="CoreClean" Name="RegClean">
 	<Exec IgnoreExitCode="true" Command="regsvr32 /s /u &quot;$(TargetDir)$(TargetName).comhost.dll&quot;" />
 </Target>
 ```
-You will need to change the 19041 in the path to match the version number on 
-your machine. After a successful build of the project, this executes the MIDL 
-compiler and compiles the type library. Then it registers the comhost file. 
-The clean part unregisters the comhost file before cleaning. For the 
-registration to work, Visual Studio must be executed as an administrator, 
-otherwise it will not have the privilege necessary to create the registry 
-entries.
+After a successful build of the project, this executes the MIDL compiler and 
+compiles the type library. Then it registers the comhost file. The clean part 
+unregisters the comhost file before cleaning. **For the registration to work, 
+Visual Studio must be executed as an administrator, otherwise it will not 
+have the privilege necessary to create the registry entries.**
 
 # DLLRegisterServer and DLLUnregisterServer
 The comhost file has a minimal amount of stuff to register the file. However 
@@ -385,4 +376,5 @@ To use this in production, six files should be copied to the install
 directory: ComTestLibraryx32.comhost.dll, ComTestLibraryx32.comhost.tlb, 
 ComTestLibraryx32.dll, ComTestLibraryx64.comhost.dll, 
 ComTestLibraryx64.comhost.tlb, ComTestLibraryx64.dll After they are copied, 
-then regsvr32 needs to be run on the two comhost files.
+then regsvr32 needs to be run on the two comhost files to get the directories
+in the registry to point to the files.

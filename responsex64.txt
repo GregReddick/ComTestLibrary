@@ -1,6 +1,0 @@
-/I "C:\Program Files (x86)\Windows Kits\10\include\10.0.19041.0\um\64;C:\Program Files (x86)\Windows Kits\10\include\10.0.19041.0\um;c:\Program Files (x86)\Windows Kits\10\Include\10.0.19041.0\shared"
-/cpp_cmd C:\Progra~2\Micros~2\2019\Preview\VC\Tools\MSVC\14.28.29828\bin\Hostx64\x64\cl.exe
-/cpp_opt "/E /I C:\Progra~2\wi3cf2~1\10\include\10.0.19041.0\um"
-/x64
-"D:\src.cs\ComTestLibrary\definitions.idl"
-/tlb "D:\src.cs\ComTestLibrary\bin\x64\Debug\net5.0-windows\ComTestLibraryx64.comhost.tlb"
