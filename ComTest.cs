@@ -7,7 +7,6 @@
 namespace ComTestLibrary
 {
 	using System;
-	using System.Diagnostics;
 	using System.IO;
 	using System.Reflection;
 	using System.Runtime.InteropServices;
@@ -17,7 +16,7 @@ namespace ComTestLibrary
 	/// <summary>(COM visible) a com test class.</summary>
 	/// <seealso cref="T:ComTestLibrary.IComTest"/>
 	[ComVisible(true)]
-	[Guid("71AD0B2F-E5D0-4272-A4FD-18F707D5E0D6")]
+	[Guid(AssemblyInfo.ClassGuid)]
 	public class ComTest : IComTest
 	{
 		/// <summary>DLL register server.</summary>
@@ -25,7 +24,7 @@ namespace ComTestLibrary
 		[ComRegisterFunction]
 		public static void DllRegisterServer(Type t)
 		{
-			using (RegistryKey key = Registry.ClassesRoot.CreateSubKey(@"TypeLib\{71AD0B2F-E5D0-4272-A4FD-18F707D5E0D6}"))
+			using (RegistryKey key = Registry.ClassesRoot.CreateSubKey(@"TypeLib\{" + AssemblyInfo.ClassGuid + @"}"))
 			{
 				Version version = typeof(AssemblyInfo).Assembly.GetName().Version;
 				using (RegistryKey keyVersion = key.CreateSubKey(string.Format("{0}.{1}", version.Major, version.Minor)))
@@ -49,7 +48,7 @@ namespace ComTestLibrary
 		[ComUnregisterFunction]
 		public static void DllUnregisterServer(Type t)
 		{
-			Registry.ClassesRoot.DeleteSubKeyTree(@"TypeLib\{71AD0B2F-E5D0-4272-A4FD-18F707D5E0D6}", false);
+			Registry.ClassesRoot.DeleteSubKeyTree(@"TypeLib\{" + AssemblyInfo.ClassGuid + @"}", false);
 		}
 
 		/// <summary>Com test method.</summary>

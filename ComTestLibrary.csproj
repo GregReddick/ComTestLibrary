@@ -1,4 +1,10 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<CLVersion>14.28.29828</CLVersion>
+		<DriveLetter>N:</DriveLetter>
+		<KitsVersion>10.0.19041.0</KitsVersion>
+		<VSVersion>2019\Preview</VSVersion>
+	</PropertyGroup>
 	<ItemGroup>
 		<AdditionalFiles Include="stylecop.json" />
 		<Compile Include="AssemblyInfo.cs" />
@@ -6,8 +12,10 @@
 		<Compile Include="IComTest.cs" />
 		<None Include="README.md" />
 		<None Include="definitions.idl" />
-		<PackageReference Include="Microsoft.Win32.Registry" Version="5.0.0" />
-		<PackageReference Include="StyleCop.Analyzers.Unstable" Version="1.2.0.321">
+		<PackageReference Include="Microsoft.Win32.Registry"
+						  Version="5.0.0" />
+		<PackageReference Include="StyleCop.Analyzers.Unstable"
+						  Version="1.2.0.321">
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 			<PrivateAssets>all</PrivateAssets>
 		</PackageReference>
@@ -18,10 +26,13 @@
 		<EnableComHosting>true</EnableComHosting>
 		<EnableDefaultItems>false</EnableDefaultItems>
 		<GenerateDocumentationFile>True</GenerateDocumentationFile>
-		<PathKitsBin>c:\Program Files (x86)\Windows Kits\10\bin\10.0.19041.0</PathKitsBin>
-		<PathKitsInclude>C:\Program Files (x86)\Windows Kits\10\include\10.0.19041.0</PathKitsInclude>
+		<NETCoreSdkRuntimeIdentifier>win-$(Platform)</NETCoreSdkRuntimeIdentifier>
+		<Platforms>x64;x86</Platforms>
+		<TargetFramework>net5.0-windows</TargetFramework>
+		<PathKitsBin>c:\Program Files (x86)\Windows Kits\10\bin\$(KitsVersion)</PathKitsBin>
+		<PathKitsInclude>C:\Program Files (x86)\Windows Kits\10\include\$(KitsVersion)</PathKitsInclude>
 		<MidlOptions>
-			/cpp_cmd "C:\Progra~2\Micros~2\2019\Preview\VC\Tools\MSVC\14.28.29828\bin\Hostx64\x64\cl.exe"
+			/cpp_cmd "$(DriveLetter)\cl.exe"
 			/dlldata nul /h nul /iid nul /proxy nul
 			/I "$(PathKitsInclude)\um\64"
 			/I "$(PathKitsInclude)\um"
@@ -30,16 +41,21 @@
 			/tlb "ComTestLibrary$(Platform).comhost.tlb"
 			definitions.idl
 		</MidlOptions>
-		<NETCoreSdkRuntimeIdentifier>win-$(Platform)</NETCoreSdkRuntimeIdentifier>
-		<Platforms>x64;x86</Platforms>
-		<TargetFramework>net5.0-windows</TargetFramework>
 	</PropertyGroup>
-	<Target AfterTargets="PostBuildEvent" Name="PostBuild">
-		<WriteLinesToFile File="$(TargetDir)midloptions.txt" Overwrite="true" Lines="$(MidlOptions)" />
+	<Target AfterTargets="PostBuildEvent"
+			Name="PostBuild">
+		<WriteLinesToFile File="$(TargetDir)midloptions.txt"
+						  Overwrite="true"
+						  Lines="$(MidlOptions)" />
+		<Exec IgnoreExitCode="true"
+			  Command="subst $(DriveLetter) &quot;C:\Program Files (x86)\Microsoft Visual Studio\$(VSVersion)\VC\Tools\MSVC\$(CLVersion)\bin\Hostx64\x64&quot;" />
 		<Exec command="&quot;$(PathKitsBin)\x64\midl.exe&quot; @$(TargetDir)midloptions.txt&quot;" />
 		<Exec command="regsvr32 /s &quot;$(TargetDir)$(TargetName).comhost.dll&quot;" />
 	</Target>
-	<Target AfterTargets="BeforeClean" BeforeTargets="CoreClean" Name="RegClean">
-		<Exec IgnoreExitCode="true" Command="regsvr32 /s /u &quot;$(TargetDir)$(TargetName).comhost.dll&quot;" />
+	<Target AfterTargets="BeforeClean"
+			BeforeTargets="CoreClean"
+			Name="RegClean">
+		<Exec IgnoreExitCode="true"
+			  Command="regsvr32 /s /u &quot;$(TargetDir)$(TargetName).comhost.dll&quot;" />
 	</Target>
 </Project>

@@ -111,27 +111,25 @@ the class is ComTest, the name of the interface is IComTest, and the name of
 the method is ComTestMethod.
 
 # The AssemblyInfo.cs File
-The AssemblyInfo file defines two important attributes.
-
+The AssemblyInfo file defines two important assembly-wide attributes.
 ```
 [assembly: ComVisible(false)]
-[assembly: Guid("1B31B683-F0AA-4E71-8F50-F2D2E5E9E210")]
-```
+[assembly: Guid(ComTestLibrary.AssemblyInfo.LibraryGuid)]
 
-The first attribute tell the compiler not to make anything visible to COM 
-unless they are specifically marked with ComVisible(true). This keeps 
-anything in the library that we don't explicity mark from poluting the 
-registry. The second assigns the GUID for the library. I also include a 
-little helper class in the AssemblyInfo.cs file. This class allows retrieving 
-project attributes. This will be used when registering the type library. This 
-class was first published in my book, [The Reddick C# Style 
-Guide](https://www.amazon.com/Reddick-Style-Guide-practices-writing/dp/0692531742).
-```
 namespace ComTestLibrary
 {
 	/// <summary>Gives information about the assembly.</summary>
 	internal static class AssemblyInfo
 	{
+		/// <summary>Unique identifier for the class.</summary>
+		internal const string ClassGuid = "71AD0B2F-E5D0-4272-A4FD-18F707D5E0D6";
+
+		/// <summary>Unique identifier for the interface.</summary>
+		internal const string InterfaceGuid = "1B31B683-F0AA-4E71-8F50-F2D2E5E9E210";
+
+		/// <summary>Unique identifier for the library.</summary>
+		internal const string LibraryGuid = "1B31B683-F0AA-4E71-8F50-F2D2E5E9E210";
+
 		/// <summary>Gets an assembly attribute.</summary>
 		/// <typeparam name="T">Assembly attribute type.</typeparam>
 		/// <returns>The assembly attribute of type T.</returns>
@@ -143,6 +141,17 @@ namespace ComTestLibrary
 	}
 }
 ```
+The first attribute tell the compiler not to make anything visible to COM 
+unless they are specifically marked with ComVisible(true). This keeps 
+anything in the library that we don't explicity mark from poluting the 
+registry. The second assigns the GUID for the library. I also include a 
+little helper class in the AssemblyInfo.cs file. This class defines the three 
+GUIDs as constants that are then used throughout the project. It also has a 
+method that makes it easy to retrieve assembly attributes. This will be used 
+when registering the type library. This class was first published in my book, 
+[The Reddick C# Style 
+Guide](https://www.amazon.com/Reddick-Style-Guide-practices-writing/dp/06925317
+42).
 
 # The Interface File
 To start, you will need an interface file. It will describe the interface
@@ -151,7 +160,7 @@ decorated with a few attributes.
 
 ```
 [ComVisible(true)]
-[Guid("1B31B683-F0AA-4E71-8F50-F2D2E5E9E210")]
+[Guid(AssemblyInfo.InterfaceGuid)]
 public interface IComTest
 ```
 
@@ -166,7 +175,7 @@ interface. It must have its own GUID.
 
 ```
 [ComVisible(true)]
-[Guid("71AD0B2F-E5D0-4272-A4FD-18F707D5E0D6")]
+[Guid(AssemblyInfo.ClassGuid)]
 public class ComTest : IComTest
 ```
 
@@ -174,51 +183,51 @@ The class file needs to provide two additional methods besides implementing
 the interface, DLLRegisterServer and DLLUnregisterServer. These will be 
 discussed later.
 
-# The Project File
-
-The project file needs these XML settings:
-
+# Setting Up the Project File
+At the top of the project file are these settings:
 ```
-	<PropertyGroup>
-		<AssemblyName>$(MSBuildProjectName)$(Platform)</AssemblyName>
-		<Description>Com Test Library</Description>
-		<EnableComHosting>true</EnableComHosting>
-		<EnableDefaultItems>false</EnableDefaultItems>
-		<GenerateDocumentationFile>True</GenerateDocumentationFile>
-		<PathKitsBin>c:\Program Files (x86)\Windows Kits\10\bin\10.0.19041.0</PathKitsBin>
-		<PathKitsInclude>C:\Program Files (x86)\Windows Kits\10\include\10.0.19041.0</PathKitsInclude>
-		<MidlOptions>
-			/cpp_cmd "C:\Progra~2\Micros~2\2019\Preview\VC\Tools\MSVC\14.28.29828\bin\Hostx64\x64\cl.exe"
-			/dlldata nul /h nul /iid nul /proxy nul
-			/I "$(PathKitsInclude)\um\64"
-			/I "$(PathKitsInclude)\um"
-			/I "$(PathKitsInclude)\shared"
-			/out "bin\$(Platform)\$(Configuration)\net5.0-windows"
-			/savePP
-			/tlb "ComTestLibrary$(Platform).comhost.tlb"
-			definitions.idl
-		</MidlOptions>
-		<NETCoreSdkRuntimeIdentifier>win-$(Platform)</NETCoreSdkRuntimeIdentifier>
-		<Platforms>x64;x86</Platforms>
-		<TargetFramework>net5.0-windows</TargetFramework>
-	</PropertyGroup>
+<PropertyGroup>
+	<CLVersion>14.28.29828</CLVersion>
+	<DriveLetter>N:</DriveLetter>
+	<KitsVersion>10.0.19041.0</KitsVersion>
+	<VSVersion>2019\Preview</VSVersion>
+</PropertyGroup>
+```
+You will need to change these settings to the values appropriate for your 
+environment. The CLVersion is set to the version of the CL compiler on your 
+computer. The KitsVersion is set to the version of the Windows Kits on your 
+computer. The DriveLetter is set to a drive letter that is not in use on your 
+computer. The VSVersion is set to the version of Visual Studio on your 
+computer such as 2017\Community. These get expanded into settings later in 
+the Project File.
 
+# The Project File
+The project file needs these XML settings:
+```
+<PropertyGroup>
+	<AssemblyName>$(MSBuildProjectName)$(Platform)</AssemblyName>
+	<Description>Com Test Library</Description>
+	<EnableComHosting>true</EnableComHosting>
+	<EnableDefaultItems>false</EnableDefaultItems>
+	<GenerateDocumentationFile>True</GenerateDocumentationFile>
+	<NETCoreSdkRuntimeIdentifier>win-$(Platform)</NETCoreSdkRuntimeIdentifier>
+	<Platforms>x64;x86</Platforms>
+	<TargetFramework>net5.0-windows</TargetFramework>
+	<PathKitsBin>c:\Program Files (x86)\Windows Kits\10\bin\$(KitsVersion)</PathKitsBin>
+	<PathKitsInclude>C:\Program Files (x86)\Windows Kits\10\include\$(KitsVersion)</PathKitsInclude>
+	<MidlOptions>
+		/cpp_cmd "$(DriveLetter)\cl.exe"
+		/dlldata nul /h nul /iid nul /proxy nul
+		/I "$(PathKitsInclude)\um\64"
+		/I "$(PathKitsInclude)\um"
+		/I "$(PathKitsInclude)\shared"
+		/out "bin\$(Platform)\$(Configuration)\net5.0-windows"
+		/tlb "ComTestLibrary$(Platform).comhost.tlb"
+		definitions.idl
+	</MidlOptions>
+</PropertyGroup>
 ```
 # Build and Test
-References to tools are somewhat fragile. You will need to change 
-**PathKitsBin**, **PathKitsInclude**, and **/cpp_cmd** to reference the 
-versions of the SDK you have installed on your computer. A somewhat big gotcha 
-is that the **/cpp_cmd path** to the cl.exe file is installed in a directory 
-that has spaces in it, but the midl compiler cannot find it if it has 
-spaces--kind of a catch 22. The workaround (this problem has existed forever, 
-but Microsoft seems to refuse to fix it) is to use FAT 8.3 short names to 
-reference the file. You can find the shortname with the "dir /X" command from 
-a command prompt. This can break as the shortname is assigned by the 
-operating system based. It is also possible to turn off support for the short 
-names in the operating system. Several possible other ways of fixing this is 
-to privide a share to the directory of the cl.exe compiler, or add the 
-directory of the cl.exe compiler to the system-wide path.
-
 The AssemblyName setting will change the name of the final assembly to have 
 the bitness appended to the name. The Description setting is used as the 
 description of the type library inside the registry. The EnableComHosting 
@@ -231,6 +240,14 @@ setting tells Visual Studio it should support building both bitness values.
 The TargetFramework setting tells the compiler that it should use .NET 5 
 built for windows. Since none of this runs on any operating system other than 
 Windows, it won't complain about features that don't work elsewhere.
+
+The MidlOptions are passed to the Midl compiler. A somewhat big catch 22 is 
+that the /cpp_cmd path to the cl.exe file is installed in a directory that 
+has spaces in the path, but the midl compiler cannot find it if it has 
+spaces. This problem has existed forever, but Microsoft seems to refuse to 
+fix it. The workaround used here is to use the ancient subst to provide a 
+drive letter for this directory, then use the drive letter in the midl 
+options. The drive letter must not be in use.
 
 # The IDL File
 The next task is to generate a type library. Because .NET Core doesn't do 
@@ -295,6 +312,10 @@ files that it needs to access to get the compiling done.
 To process the file, rather than attempting to pass everything to the MIDL 
 command line, we pass in a response file midloptions.txt. The response file 
 is created by the project file and saved to the target directory.
+
+There is a new version of the MIDL language (version 3) that is much 
+simplified, but it seems that it will not produce .tlb files, so is useless 
+for the task needed here.
 
 # More Project File
 Going back to the project file, here is another section of the file:

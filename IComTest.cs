@@ -10,7 +10,7 @@ namespace ComTestLibrary
 
 	/// <summary>Interface for com test.</summary>
 	[ComVisible(true)]
-	[Guid("1B31B683-F0AA-4E71-8F50-F2D2E5E9E210")]
+	[Guid(AssemblyInfo.InterfaceGuid)]
 	public interface IComTest
 	{
 		/// <summary>Com test method.</summary>
