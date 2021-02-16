@@ -27,7 +27,6 @@
 			/I "$(PathKitsInclude)\um"
 			/I "$(PathKitsInclude)\shared"
 			/out "bin\$(Platform)\$(Configuration)\net5.0-windows"
-			/savePP
 			/tlb "ComTestLibrary$(Platform).comhost.tlb"
 			definitions.idl
 		</MidlOptions>
