@@ -6,27 +6,27 @@ Visio, Word). Note that .NET 5 is a shortened name for .NET Core Version 5.
 While this was relatively easy in the earlier .NET Framework projects there 
 is missing functionality in .NET Core that makes this difficult.
 
-*Recommendation: Unless you have a good reason for building the library in 
-.NET 5 (or any version of .NET Core), I recommend using .NET Framework 4.8 as 
-your target environment. An example of a good reason is a library that will 
-**also** be called by a .NET Core application. There are complexities, 
-particularly in the .idl file and registration, that you have to do by hand in 
-this technique that are solved automatically by the .NET Framework. I expect 
-in future versions of .NET Core (.NET 5.1?, .NET 6?), that they will do 
-automatically some of the things I am doing by hand here. When that happens, 
-you can make the transition.*
+*Recommendation: Unless you have a good reason for building the library that 
+needs to be called from a COM host in .NET 5 (or any version of .NET Core), I 
+recommend instead using .NET Framework 4.8 as your target environment. An 
+example of a good reason is a library that will **also** be called by a .NET 
+Core application. There are complexities, particularly in the .idl file and 
+registration, that you have to do by hand in this technique that are solved 
+automatically by the .NET Framework. I expect in future versions of .NET Core 
+(.NET 5.1?, .NET 6?), it will create the type library and register it. 
+When that happens, you can make the transition without what is shown here.*
 
 The description that needs to go into the .idl file has to describe the 
 interface that you define in C# in the terms that they will translate to 
 under the covers and be consumed by COM. This translation is beyond the scope 
 of what I can cover here. The definitive work on the subject is Adam Nathan's 
-[.NET and COM: The Complete Interoperability 
-Guide](https://www.amazon.com/gp/product/B003AYZB7U), which although old 
-(2002) and only still in print in a Kindle edition, covers all of these 
-details in excruciating detail (1579 pages). If you ever need to do 
-communication between COM and .NET, it is worth having a copy of this book. 
-Very little of the topics covered in the book have changed in almost 20 
-years, including the transition from .NET Framework to .NET Core.
+[.NET and COM: The Complete Interoperability Guide] 
+(https://www.amazon.com/gp/product/B003AYZB7U), which although old (2002) and 
+still in print only in a Kindle edition, covers this (and many other things) 
+in excruciating detail (1579 pages). If you ever need to do communication 
+between COM and .NET, it is worth having a copy of this book. Very little of 
+the topics covered in the book have changed in almost 20 years, including the 
+transition from .NET Framework to .NET Core.
 
 # The Issue
 There has been a change in what .NET Core does compared to what the .NET 
@@ -40,7 +40,9 @@ work of translating COM calls into .NET functionality. The main problem is
 that the comhost DLL does not embed a type library that allows early binding 
 to the library. So we need to create that type library ourselves, and create 
 the correct registry entries so that COM can connect to the library and make 
-the proper calls.
+the proper calls. The technical details of the .NET Core wrapping of 
+libraries can be found 
+[here](https://github.com/dotnet/runtime/blob/1d9e50cb4735df46d3de0cee5791e97295eaf588/docs/design/features/COM-activation.md).
 
 # Limitation
 One COM host cannot start two different versions of .NET Core in the same 
@@ -61,11 +63,11 @@ Another issue that you will run into is a problem of bitness. A 32 bit COM
 host cannot call a 64 bit .NET library. And the same is true the other way 
 around--a 64 bit COM host cannot call a 32 bit library. We have three 
 different pieces that must be all the same bitness: the COM host, the comhost 
-file, and the .NET library. There is a fourth piece that also has bitness: 
-the version of Windows. Almost all copies of Windows installed now are 64 
-bit, but that hasn't always been the case. 64 bit programs and libraries 
-cannot run on 32 bit Windows, but 32 bit programs and libraries will run on 
-64 bit Windows.
+file, and the .NET library (e.g. Excel.exe, x.comhost.dll, x.dll). There is a 
+fourth piece that also has bitness: the version of Windows. Almost all copies 
+of Windows installed now are 64 bit, but that hasn't always been the case. 64 
+bit programs and libraries cannot run on 32 bit Windows, but 32 bit programs 
+and libraries will run on 64 bit Windows.
 
 The COM host will be something like Excel. By default, the Office installer 
 installs 32 bit editions of Microsoft Office. However, you can also install 
@@ -91,19 +93,19 @@ build process once this enhancement is made and released.
 # GUIDs
 You will need to generate three GUIDs (Globally Unique Identifiers, also 
 called UUID, Universally Unique Identifiers) to get your own projects to 
-work. These are essentially very large random numbers. **DO NOT USE the 
-GUIDs I have in the sample project in your own projects.** The purpose of a 
-GUID is to be unique across the entire universe, so that no two projects will 
-ever conflict. You will need one for library and one each for the class and 
-the interface. You can generate GUIDs in Visual Studio by selecting "Tools > 
-Create GUID" from the menu. These GUIDs will need to be placed into the 
-appropriate places in the AssemblyInfo.cs, IComTest.cs, ComTest.cs, and 
-definitions.idl files. Once you create a GUID for a project, never change it, 
-as each time you do you will be creating additional entries in the Windows 
-registry, bloating the registry and making Windows just a little slower.
+work. These are essentially very large random numbers. **DO NOT USE the GUIDs 
+I have in the sample project in your own projects.** The purpose of a GUID is 
+to be unique across the entire universe, so that no two projects will ever 
+conflict. You will need one for library and one each for the class and the 
+interface. You can generate GUIDs in Visual Studio by selecting **Tools > 
+Create GUID** from the menu. These GUIDs will need to be placed into the 
+appropriate places in the AssemblyInfo.cs and definitions.idl files. Once you 
+create a GUID for a project, never change it, as each time you do you will be 
+creating additional entries in the Windows registry, bloating the registry 
+and making Windows just a little slower.
 
 # The Sample Project
-The sample project provides just one method, that calculates the area of a 
+The sample project provides just one method that calculates the area of a 
 circle with a given radius. It also accepts a string, although it really 
 doesn't do anything with it. The point is to show passing stuff in and 
 getting stuff back. The name of the library is ComTestLibrary, the name of 
@@ -111,14 +113,27 @@ the class is ComTest, the name of the interface is IComTest, and the name of
 the method is ComTestMethod.
 
 # The AssemblyInfo.cs File
-The AssemblyInfo file defines two important assembly-wide attributes.
+The AssemblyInfo file defines two important assembly-wide attributes, 
+ComVisible and Guid.
 ```
 [assembly: ComVisible(false)]
 [assembly: Guid(ComTestLibrary.AssemblyInfo.LibraryGuid)]
-
+```
+The first attribute tell the compiler not to make anything visible to COM 
+unless they are specifically marked with ComVisible(true). This keeps 
+anything in the library that we don't explicity mark from poluting the 
+registry. The second assigns the GUID for the library. Also included is a 
+little helper class in the AssemblyInfo.cs file. This class defines the three 
+GUIDs as constants that are then used throughout the project. It also has a 
+method that makes it easy to retrieve assembly attributes. This will be used 
+when registering the type library. This class was first published in my book, 
+[The Reddick C# Style 
+Guide](https://www.amazon.com/Reddick-Style-Guide-practices-writing/dp/06925317
+ 42).
+```
 namespace ComTestLibrary
 {
-	/// <summary>Gives information about the assembly.</summary>
+	/// <summary>Gives information about the assembly. Change the GUIDs in your own project.</summary>
 	internal static class AssemblyInfo
 	{
 		/// <summary>Unique identifier for the class.</summary>
@@ -141,29 +156,15 @@ namespace ComTestLibrary
 	}
 }
 ```
-The first attribute tell the compiler not to make anything visible to COM 
-unless they are specifically marked with ComVisible(true). This keeps 
-anything in the library that we don't explicity mark from poluting the 
-registry. The second assigns the GUID for the library. I also include a 
-little helper class in the AssemblyInfo.cs file. This class defines the three 
-GUIDs as constants that are then used throughout the project. It also has a 
-method that makes it easy to retrieve assembly attributes. This will be used 
-when registering the type library. This class was first published in my book, 
-[The Reddick C# Style 
-Guide](https://www.amazon.com/Reddick-Style-Guide-practices-writing/dp/06925317
-42).
-
 # The Interface File
 To start, you will need an interface file. It will describe the interface
 to the library. The important part of this interface is that it must be
 decorated with a few attributes.
-
 ```
 [ComVisible(true)]
 [Guid(AssemblyInfo.InterfaceGuid)]
 public interface IComTest
 ```
-
 The ComVisible attribute tells the compiler that it should make this interface
 visible to COM. The Guid attribute assigns the Guid for the interface. The
 ComInterfaceType default is InterfaceIsDual, which means that it can be early
@@ -172,13 +173,11 @@ or late bound.
 # The Class File
 The class file provides the actual functionality. It implements the 
 interface. It must have its own GUID.
-
 ```
 [ComVisible(true)]
 [Guid(AssemblyInfo.ClassGuid)]
 public class ComTest : IComTest
 ```
-
 The class file needs to provide two additional methods besides implementing 
 the interface, DLLRegisterServer and DLLUnregisterServer. These will be 
 discussed later.
@@ -222,7 +221,7 @@ The project file needs these XML settings:
 		/I "$(PathKitsInclude)\um"
 		/I "$(PathKitsInclude)\shared"
 		/out "bin\$(Platform)\$(Configuration)\net5.0-windows"
-		/tlb "ComTestLibrary$(Platform).comhost.tlb"
+		/tlb "$(MSBuildProjectName)$(Platform).comhost.tlb"
 		definitions.idl
 	</MidlOptions>
 </PropertyGroup>
@@ -254,35 +253,36 @@ The next task is to generate a type library. Because .NET Core doesn't do
 this task, we need to do it ourselves. This is done by creating an IDL file. 
 The structure of an IDL file can be found 
 [here](https://docs.microsoft.com/en-us/windows/win32/midl/midl-start-page).
-
 ```
-import "unknwn.idl";
-
-[
-	object,
-	uuid(1B31B683-F0AA-4E71-8F50-F2D2E5E9E210),
-	dual,
-	nonextensible,
-	helpstring("ComTestLibrary"),
-	pointer_default(unique),
-	oleautomation
-]
-interface IComTest : IDispatch
-{
-	[id(1), helpstring("ComTestMethod")]
-	HRESULT ComTestMethod(
-		[in] double radius,
-		[in] BSTR comment,
-		[out, retval] double* ReturnVal);
-};
-
 [
 	uuid(49d618d5-a2d1-4fb6-ad3a-f8dc5ca25e02),
+	version(1.0),
 	helpstring("ComTestLibrary")
 ]
 library ComTestLibrary
 {
 	importlib("STDOLE2.TLB");
+
+	[
+		odl,
+		uuid(1B31B683-F0AA-4E71-8F50-F2D2E5E9E210),
+		dual,
+		oleautomation,
+		nonextensible,
+		helpstring("ComTestLibrary"),
+		object,
+	]
+	interface IComTest : IDispatch
+	{
+		[
+			id(1),
+			helpstring("ComTestMethod")
+		]
+		HRESULT ComTestMethod(
+			[in] double radius,
+			[in] BSTR comment,
+			[out, retval] double* ReturnVal);
+	};
 
 	[
 		uuid(71AD0B2F-E5D0-4272-A4FD-18F707D5E0D6),
@@ -294,15 +294,14 @@ library ComTestLibrary
 	};
 }
 ```
-
 The first uuid must match the GUID provided for library in the AssemblyInfo 
-file. The second uuid must match the one in the interface file. The third 
-must match the one in the class file.
+file. The second uuid must match the one for the interface. The third 
+must match the one for the class.
 
-The critical part of the file is the description of the methods. This must be
-the COM equivalent description of the methods. For example, strings in C#
-must be listed as the BSTR data type for COM. The method must return a
-HRESULT. A parameter is the actual return value. Each method must have a
+The critical part of the file is the description of the method. This must be 
+the COM equivalent for the method in the class. For example, strings in C# 
+must be listed as the BSTR data type for COM. The method must return a 
+HRESULT. A parameter is the actual return value. Each method must have a 
 unique id number.
 
 This file is compiled by the MIDL compiler. The MIDL compiler calls the CL 
@@ -338,17 +337,17 @@ have the privilege necessary to create the registry entries.**
 # DLLRegisterServer and DLLUnregisterServer
 The comhost file has a minimal amount of stuff to register the file. However 
 it does not create all of the registry entries needed to use the library from 
-a COM host. There needs to be a number of other entries. To create those 
-entries, create two additional methods in the class file. When the comhost 
-file is registered, if the DLLRegisterServer method exists, it will get 
-called. When it is unregistered, it will call the DLLUnregisterServer method. 
-These methods need to be decorated with attributes to identify them. Change 
-the GUID in both procedures. The methods look like this:
+a COM host. There needs to be a number of other entries to register the type 
+library. To create those entries, create two additional methods in the class 
+file. When the comhost file is registered, if the DLLRegisterServer method 
+exists, it will get called. When it is unregistered, it will call the 
+DLLUnregisterServer method. These methods need to be decorated with attributes
+ to identify them. The methods look like this:
 ```
 [ComRegisterFunction]
 public static void DllRegisterServer(Type t)
 {
-	using (RegistryKey key = Registry.ClassesRoot.CreateSubKey(@"TypeLib\{71AD0B2F-E5D0-4272-A4FD-18F707D5E0D6}"))
+	using (RegistryKey key = Registry.ClassesRoot.CreateSubKey(@"TypeLib\{" + AssemblyInfo.ClassGuid + @"}"))
 	{
 		Version version = typeof(AssemblyInfo).Assembly.GetName().Version;
 		using (RegistryKey keyVersion = key.CreateSubKey(string.Format("{0}.{1}", version.Major, version.Minor)))
@@ -370,19 +369,20 @@ public static void DllRegisterServer(Type t)
 [ComUnregisterFunction]
 public static void DllUnregisterServer(Type t)
 {
-	Registry.ClassesRoot.DeleteSubKeyTree(@"TypeLib\{71AD0B2F-E5D0-4272-A4FD-18F707D5E0D6}", false);
+	Registry.ClassesRoot.DeleteSubKeyTree(@"TypeLib\{" + AssemblyInfo.ClassGuid + @"}", false);
 }
 ```
 The AssemblyInfo class is found in the AssemblyInfo.cs file.
 
 # Calling the DLL From Excel
 To try calling the DLL from Excel VBA, start Excel and press Alt+F11 to enter 
-the Visual Basic Editor. Create a reference by selecting Tools > References 
+the Visual Basic Editor. Create a reference by selecting **Tools > References** 
 from the menu. Check the checkbox next to ComTestLibrary and press OK. This 
-creates an early binding reference to the library. Select Insert > Module 
+creates an early binding reference to the library. Select **Insert > Module** 
 from the menu. Insert the following VBA code:
 ```
-Public Sub TryIt
+Public Sub EarlyBinding
+	'Requires reference to ComTestLibrary being added
 	Dim comtest As ComTestLibrary.ComTest
 	Dim area As Double
 	Set comtest = New ComTestLibrary.ComTest
@@ -392,6 +392,20 @@ End Sub
 ```
 Click in the middle of the sub and press the F5 key to execute it. If all 
 went well, it will show you the area of a circle with the radius of 3.
+
+Try it again with late binding, where a reference to the library is not
+required. Late binding will not provide intellisense when calling the method.
+```
+Public Sub LateBinding
+	Dim comtest As Object
+	Dim area As Double
+	Set comtest = CreateObject("ComTestLibrary.ComTest")
+	area = comtest.ComTestMethod(3, "abcdefghi")
+	MsgBox area
+End Sub
+```
+
+# Using COM Library in Production
 
 To use this in production, six files should be copied to the install 
 directory: ComTestLibraryx32.comhost.dll, ComTestLibraryx32.comhost.tlb, 

@@ -34,11 +34,12 @@
 		<MidlOptions>
 			/cpp_cmd "$(DriveLetter)\cl.exe"
 			/dlldata nul /h nul /iid nul /proxy nul
+			/env $(Platform.Replace("x86", "win32").Replace("x64", "win64"))
 			/I "$(PathKitsInclude)\um\64"
 			/I "$(PathKitsInclude)\um"
 			/I "$(PathKitsInclude)\shared"
 			/out "bin\$(Platform)\$(Configuration)\net5.0-windows"
-			/tlb "ComTestLibrary$(Platform).comhost.tlb"
+			/tlb "$(MSBuildProjectName)$(Platform).comhost.tlb"
 			definitions.idl
 		</MidlOptions>
 	</PropertyGroup>
