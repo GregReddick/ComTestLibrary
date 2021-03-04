@@ -220,7 +220,7 @@ The project file needs these XML settings:
 		/I "$(PathKitsInclude)\um\64"
 		/I "$(PathKitsInclude)\um"
 		/I "$(PathKitsInclude)\shared"
-		/out "bin\$(Platform)\$(Configuration)\net5.0-windows"
+		/out "bin\$(Platform)\$(Configuration)\$(TargetFramework)"
 		/tlb "$(MSBuildProjectName)$(Platform).comhost.tlb"
 		definitions.idl
 	</MidlOptions>

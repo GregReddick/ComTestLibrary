@@ -23,7 +23,7 @@ namespace ComTestLibrary
 		internal const string InterfaceGuid = "1B31B683-F0AA-4E71-8F50-F2D2E5E9E210";
 
 		/// <summary>Unique identifier for the library.</summary>
-		internal const string LibraryGuid = "1B31B683-F0AA-4E71-8F50-F2D2E5E9E210";
+		internal const string LibraryGuid = "47A20781-26AD-465F-BDA9-AC59CEA74B69";
 
 		/// <summary>Gets an assembly attribute.</summary>
 		/// <typeparam name="T">Assembly attribute type.</typeparam>
