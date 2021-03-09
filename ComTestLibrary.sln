@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.31004.235
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ComTestLibrary", "ComTestLibrary.csproj", "{6A5BFA87-267D-454A-84D7-774ADB7E4E27}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ComTestLibrary", "ComTestLibrary1\ComTestLibrary.csproj", "{6A5BFA87-267D-454A-84D7-774ADB7E4E27}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
