@@ -54,9 +54,9 @@ currently is no way to start .NET Core COM libraries out-of-process.
 # Getting Started
 You will need the MIDL compiler. This is installed in the C++ packages, not 
 the C# packages in the Visual Studio installer. You will also need the CL 
-compiler to perform C++ preprocessing on the .IDL file. I have not determined 
-exactly what is the minimal install, but installing all the stuff needed to 
-build C++ programs will give you what you need.
+compiler to perform C++ preprocessing on the .IDL file. The MIDL compiler
+is installed by checking the WINDOWS 10 SDK check box in the Visual Studio
+Installer.
 
 # Bitness (32 bit versus 64 bit)
 Another issue that you will run into is a problem of bitness. A 32 bit COM 
@@ -84,7 +84,7 @@ the COM host that will calling it. This is also performed by a compiler flag.
 All of these compiler flags are set in the Visual Studio project file.
 
 The current project has two different builds, x86 (32 bit) and x64 (64 bit). 
-These can be "Batch build" to build both of them at the same time. This was talked about 
+These can be "Batch build" to build both of them at the same time. Having this work with one build was talked about 
 in this note: 
 https://github.com/dotnet/runtime/issues/32493, but has not been addressed. This would allow a AnyCPU 
 build to have both a 32 bit and 64 bit comhost file. I will simplify the 
@@ -200,6 +200,10 @@ computer. The VSVersion is set to the version of Visual Studio on your
 computer such as 2022\Enterprise. These get expanded into settings later in 
 the Project File.
 
+One unfortunate thing about these is that as the versions of CLVersion and KitsVersion
+change, you will need to make the corresponding change in the project file. This
+means that an update to Visual Studio may break the build.
+
 # The Project File
 The project file needs these XML settings:
 ```
@@ -297,7 +301,7 @@ library ComTestLibrary
 The first uuid must match the GUID provided for library in the AssemblyInfo 
 file. The second uuid must match the one for the interface. The third 
 must match the one for the class. **AGAIN...DO NOT USE the GUIDs 
-I have in the sample project in your own projects.**
+I have in the sample project in your own projects, make your own.**
 
 The critical part of the file is the description of the method. This must be 
 the COM equivalent for the method in the class. For example, strings in C# 
