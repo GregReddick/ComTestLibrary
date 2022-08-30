@@ -296,7 +296,8 @@ library ComTestLibrary
 ```
 The first uuid must match the GUID provided for library in the AssemblyInfo 
 file. The second uuid must match the one for the interface. The third 
-must match the one for the class.
+must match the one for the class. **AGAIN...DO NOT USE the GUIDs 
+I have in the sample project in your own projects.**
 
 The critical part of the file is the description of the method. This must be 
 the COM equivalent for the method in the class. For example, strings in C# 
