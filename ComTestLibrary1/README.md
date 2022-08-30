@@ -8,12 +8,12 @@ is missing functionality in .NET Core that makes this difficult.
 
 *Recommendation: Unless you have a good reason for building the library that 
 needs to be called from a COM host in .NET 5 (or any version of .NET Core), I 
-recommend instead using .NET Framework 4.8 as your target environment. An 
+recommend instead using .NET Framework 4.8.1 as your target environment. An 
 example of a good reason is a library that will **also** be called by a .NET 
 Core application. There are complexities, particularly in the .idl file and 
 registration, that you have to do by hand in this technique that are solved 
 automatically by the .NET Framework. I expect in future versions of .NET Core 
-(.NET 5.1?, .NET 6?), it will create the type library and register it. 
+(.NET 7?), it will create the type library and register it. 
 When that happens, you can make the transition without what is shown here.*
 
 The description that needs to go into the .idl file has to describe the 
@@ -21,8 +21,8 @@ interface that you define in C# in the terms that they will translate to
 under the covers and be consumed by COM. This translation is beyond the scope 
 of what I can cover here. The definitive work on the subject is Adam Nathan's 
 [.NET and COM: The Complete Interoperability Guide] 
-(https://www.amazon.com/gp/product/B003AYZB7U), which although old (2002) and 
-still in print only in a Kindle edition, covers this (and many other things) 
+(https://www.amazon.com/gp/product/B003AYZB7U). Although old (2002) and 
+only currently available in a Kindle edition, covers this (and many other things) 
 in excruciating detail (1579 pages). If you ever need to do communication 
 between COM and .NET, it is worth having a copy of this book. Very little of 
 the topics covered in the book have changed in almost 20 years, including the 
@@ -30,7 +30,7 @@ transition from .NET Framework to .NET Core.
 
 # The Issue
 There has been a change in what .NET Core does compared to what the .NET 
-Framework did. In the .NET Framework, it built a DLL and embedded a type 
+Framework did. In the .NET Framework (up through 4.8.1), it built a DLL and embedded a type 
 library into it describing the interface. It then used a single process, 
 mscoree, that translated the information in the DLL into terms that COM could 
 process. .NET Core uses a different technique. Instead of having a single 
@@ -38,7 +38,7 @@ process do the translation, it provides a wrapper library, so that if the
 base library is x.dll, the wrapper is x.comhost.dll. The comhost dll does the 
 work of translating COM calls into .NET functionality. The main problem is 
 that the comhost DLL does not embed a type library that allows early binding 
-to the library. So we need to create that type library ourselves, and create 
+to the library, So we need to create that type library ourselves, and create 
 the correct registry entries so that COM can connect to the library and make 
 the proper calls. The technical details of the .NET Core wrapping of 
 libraries can be found 
@@ -62,8 +62,8 @@ build C++ programs will give you what you need.
 Another issue that you will run into is a problem of bitness. A 32 bit COM 
 host cannot call a 64 bit .NET library. And the same is true the other way 
 around--a 64 bit COM host cannot call a 32 bit library. We have three 
-different pieces that must be all the same bitness: the COM host, the comhost 
-file, and the .NET library (e.g. Excel.exe, x.comhost.dll, x.dll). There is a 
+different pieces that must be all the same bitness: the COM host (e.g. Excel.exe), the comhost 
+file (e.g. x.comhost.dll), and the .NET library (e.g. x.dll). There is a 
 fourth piece that also has bitness: the version of Windows. Almost all copies 
 of Windows installed now are 64 bit, but that hasn't always been the case. 64 
 bit programs and libraries cannot run on 32 bit Windows, but 32 bit programs 
@@ -84,11 +84,11 @@ the COM host that will calling it. This is also performed by a compiler flag.
 All of these compiler flags are set in the Visual Studio project file.
 
 The current project has two different builds, x86 (32 bit) and x64 (64 bit). 
-These can be "Batch build" to build both of them at the same time. Some of 
-the complexity of handling both 32 and 64 bit will soon be fixed: 
-https://github.com/dotnet/runtime/issues/32493. This will allow a AnyCPU 
+These can be "Batch build" to build both of them at the same time. This was talked about 
+in this note: 
+https://github.com/dotnet/runtime/issues/32493, but has not been addressed. This would allow a AnyCPU 
 build to have both a 32 bit and 64 bit comhost file. I will simplify the 
-build process once this enhancement is made and released.
+build process if this enhancement is ever made and released.
 
 # GUIDs
 You will need to generate three GUIDs (Globally Unique Identifiers, also 
@@ -189,7 +189,7 @@ At the top of the project file are these settings:
 	<CLVersion>14.28.29828</CLVersion>
 	<DriveLetter>N:</DriveLetter>
 	<KitsVersion>10.0.19041.0</KitsVersion>
-	<VSVersion>2019\Preview</VSVersion>
+	<VSVersion>2022\Community</VSVersion>
 </PropertyGroup>
 ```
 You will need to change these settings to the values appropriate for your 
@@ -197,7 +197,7 @@ environment. The CLVersion is set to the version of the CL compiler on your
 computer. The KitsVersion is set to the version of the Windows Kits on your 
 computer. The DriveLetter is set to a drive letter that is not in use on your 
 computer. The VSVersion is set to the version of Visual Studio on your 
-computer such as 2017\Community. These get expanded into settings later in 
+computer such as 2022\Enterprise. These get expanded into settings later in 
 the Project File.
 
 # The Project File
@@ -244,7 +244,7 @@ The MidlOptions are passed to the Midl compiler. A somewhat big catch 22 is
 that the /cpp_cmd path to the cl.exe file is installed in a directory that 
 has spaces in the path, but the midl compiler cannot find it if it has 
 spaces. This problem has existed forever, but Microsoft seems to refuse to 
-fix it. The workaround used here is to use the ancient subst to provide a 
+fix it. The workaround used here is to use the ancient SUBST command to provide a 
 drive letter for this directory, then use the drive letter in the midl 
 options. The drive letter must not be in use.
 
@@ -331,7 +331,7 @@ Going back to the project file, here is another section of the file:
 After a successful build of the project, this executes the MIDL compiler and 
 compiles the type library. Then it registers the comhost file. The clean part 
 unregisters the comhost file before cleaning. **For the registration to work, 
-Visual Studio must be executed as an administrator, otherwise it will not 
+Visual Studio itself must be executed as an administrator, otherwise it will not 
 have the privilege necessary to create the registry entries.**
 
 # DLLRegisterServer and DLLUnregisterServer
@@ -342,7 +342,7 @@ library. To create those entries, create two additional methods in the class
 file. When the comhost file is registered, if the DLLRegisterServer method 
 exists, it will get called. When it is unregistered, it will call the 
 DLLUnregisterServer method. These methods need to be decorated with attributes
- to identify them. The methods look like this:
+to identify them. The methods look like this:
 ```
 [ComRegisterFunction]
 public static void DllRegisterServer(Type t)
