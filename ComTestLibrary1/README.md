@@ -56,7 +56,8 @@ You will need the MIDL compiler. This is installed in the C++ packages, not
 the C# packages in the Visual Studio installer. You will also need the CL 
 compiler to perform C++ preprocessing on the .IDL file. The MIDL compiler
 is installed by checking the WINDOWS 10 SDK check box in the Visual Studio
-Installer.
+Installer. You will also need the CL compiler. This is installed by checking
+the MSVC check box in the Visual Studio Installer.
 
 # Bitness (32 bit versus 64 bit)
 Another issue that you will run into is a problem of bitness. A 32 bit COM 
